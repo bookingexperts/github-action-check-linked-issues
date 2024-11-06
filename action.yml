@@ -36,6 +36,10 @@ inputs:
     description: "A boolean value that allows the PR to only link issues on external repositories"
     required: false
     default: "false"
+  required-external-repo:
+    description: "For external issues, only allow this repo."
+    required: false
+    default: ""
 
 outputs:
   linked_issues_count:

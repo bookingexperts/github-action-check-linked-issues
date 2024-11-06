@@ -6,8 +6,6 @@ module.exports = {
   getInput: jest.fn(),
   getBooleanInput: jest.fn((arg) => {
     const github = require("@actions/github");
-    console.log("HI");
-    console.log(arg);
 
     if (arg == "allow-only-external-issues") {
       return github.context.allowOnlyExternalIssues ?? false;

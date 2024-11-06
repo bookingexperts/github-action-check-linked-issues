@@ -143,6 +143,58 @@ test("should return the number of linked issues on only external repository when
   expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 3);
 });
 
+test("filters by required-external-repo", async () => {
+  core.getInput.mockImplementation((a) =>
+    a === "required-external-repo" ? "ext_org/ext_repo" : "",
+  );
+
+  // eslint-disable-next-line
+  github.context = {
+    looseMatching: true,
+    eventName: "pull_request",
+    payload: {
+      action: "opened",
+      number: 123,
+      repository: {
+        name: REPO_NAME,
+        owner: {
+          login: ORG_NAME,
+        },
+      },
+    },
+  };
+
+  await run();
+
+  expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 3);
+});
+
+test("filters by both allow-only-external-issues and required-external-repo", async () => {
+  core.getInput.mockImplementation((a) =>
+    a === "required-external-repo" ? "ext_org/ext_repo" : "",
+  );
+
+  // eslint-disable-next-line
+  github.context = {
+    allowOnlyExternalIssues: true,
+    eventName: "pull_request",
+    payload: {
+      action: "opened",
+      number: 123,
+      repository: {
+        name: REPO_NAME,
+        owner: {
+          login: ORG_NAME,
+        },
+      },
+    },
+  };
+
+  await run();
+
+  expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 1);
+});
+
 test.each([["pull_request"], ["pull_request_target"]])(
   "should succeed when [no-issue] is part of the PR body and also delete any comments",
   async (eventName) => {

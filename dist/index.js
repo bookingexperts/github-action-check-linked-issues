@@ -33831,6 +33831,9 @@ minimatch.unescape = unescape_unescape;
 
 
 
+const GITHUB_KEYWORDS =
+  "close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved";
+
 function parseCSV(value) {
   if (value.trim() === "") return [];
   return value.split(",").map((p) => p.trim());
@@ -33919,8 +33922,8 @@ function getLinkedIssues({ octokit, prNumber, repoOwner, repoName }) {
 }
 
 function extractLocalIssueCount(body) {
-  const regex =
-    /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/gim;
+  const regex = new RegExp(`\\b(${GITHUB_KEYWORDS})\\s#(\\d+)`, "gim");
+
   let count = 0;
 
   while (regex.exec(body.toLowerCase())) {
@@ -33931,8 +33934,24 @@ function extractLocalIssueCount(body) {
 }
 
 function extractExternalIssueCount(body) {
-  const regex =
-    /\b(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s(https?:\/\/github\.com\/)*(([^/]+)\/([^/|#]+)(\/issues\/|#)(\d+))/gim;
+  const requiredExternalRepo = core.getInput("required-external-repo", {
+    required: false,
+  });
+
+  let regex;
+
+  if (requiredExternalRepo?.length) {
+    regex = new RegExp(
+      `\\b(${GITHUB_KEYWORDS})\\s${requiredExternalRepo}#\\d+`,
+      "gim",
+    );
+  } else {
+    regex = new RegExp(
+      `\\b(${GITHUB_KEYWORDS})\\s(https?:\\/\\/github\\.com\\/)*(([^/]+)\\/([^/|#]+)(\\/issues\\/|#)(\\d+))`,
+      "gim",
+    );
+  }
+
   let count = 0;
 
   while (regex.exec(body.toLowerCase())) {
@@ -33969,9 +33988,6 @@ async function getBodyValidIssueCount({
   const internalIssueCount = allowOnlyExternalIssues
     ? 0
     : extractLocalIssueCount(body);
-
-  console.log(allowOnlyExternalIssues);
-  console.log(internalIssueCount);
 
   // loading external issues
   const externalIssueCount = extractExternalIssueCount(body);
