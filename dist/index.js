@@ -34078,21 +34078,27 @@ async function run() {
 
     const skipCheck = await skipLinkedIssuesCheck(pullRequest);
 
+    const linkedIssuesComments = await getPrComments({
+      octokit,
+      repoName: name,
+      prNumber: number,
+      repoOwner: owner.login,
+    });
+
     if (skipCheck) {
       core.debug("Skip instruction [no-issue] found, skipping check");
+
+      if (linkedIssuesComments.length) {
+        await deleteLinkedIssueComments(octokit, linkedIssuesComments);
+
+        core.debug(`${linkedIssuesComments.length} comment(s) deleted.`);
+      }
     } else {
       const linkedIssuesCount = await retrieveLinkedIssuesCount({
         pullRequest,
         repoName: name,
         repoOwner: owner.login,
         octokit,
-      });
-
-      const linkedIssuesComments = await getPrComments({
-        octokit,
-        repoName: name,
-        prNumber: number,
-        repoOwner: owner.login,
       });
 
       core.setOutput("linked_issues_count", linkedIssuesCount);
@@ -34114,7 +34120,8 @@ async function run() {
         core.setFailed(ERROR_MESSAGE);
       } else if (linkedIssuesComments.length) {
         await deleteLinkedIssueComments(octokit, linkedIssuesComments);
-        core.debug(`${linkedIssuesComments.length} Comment(s) deleted.`);
+
+        core.debug(`${linkedIssuesComments.length} comment(s) deleted.`);
       }
     }
   } catch (error) {
