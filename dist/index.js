@@ -33959,13 +33959,19 @@ async function getBodyValidIssueCount({
   octokit,
   repoOwner,
   repoName,
+  allowOnlyExternalIssues,
 }) {
   if (!body) {
     return 0;
   }
 
   // loading issues from the PR's repo
-  const internalIssueCount = extractLocalIssueCount(body);
+  const internalIssueCount = allowOnlyExternalIssues
+    ? 0
+    : extractLocalIssueCount(body);
+
+  console.log(allowOnlyExternalIssues);
+  console.log(internalIssueCount);
 
   // loading external issues
   const externalIssueCount = extractExternalIssueCount(body);
@@ -34141,16 +34147,24 @@ async function retrieveLinkedIssuesCount({
 }) {
   let linkedIssuesCount = 0;
 
+  const allowOnlyExternalIssues = core.getBooleanInput(
+    "allow-only-external-issues",
+    {
+      required: false,
+    },
+  );
+
   const useLooseMatching = core.getBooleanInput("loose-matching", {
     required: false,
   });
 
-  if (useLooseMatching) {
+  if (allowOnlyExternalIssues || useLooseMatching) {
     linkedIssuesCount = await getBodyValidIssueCount({
       body: pullRequest.body,
       repoName,
       repoOwner,
       octokit,
+      allowOnlyExternalIssues,
     });
   } else {
     linkedIssuesCount = pullRequest?.closingIssuesReferences?.totalCount;

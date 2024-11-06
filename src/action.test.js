@@ -121,6 +121,28 @@ test("should return the number of linked issues using loose matching on local an
   expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 5);
 });
 
+test("should return the number of linked issues on only external repository when only external issues are allowed", async () => {
+  // eslint-disable-next-line
+  github.context = {
+    allowOnlyExternalIssues: true,
+    eventName: "pull_request",
+    payload: {
+      action: "opened",
+      number: 123,
+      repository: {
+        name: REPO_NAME,
+        owner: {
+          login: ORG_NAME,
+        },
+      },
+    },
+  };
+
+  await run();
+
+  expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 3);
+});
+
 test.each([["pull_request"], ["pull_request_target"]])(
   "should succeed when [no-issue] is part of the PR body and also delete any comments",
   async (eventName) => {

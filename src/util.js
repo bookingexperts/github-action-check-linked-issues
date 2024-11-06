@@ -130,13 +130,19 @@ export async function getBodyValidIssueCount({
   octokit,
   repoOwner,
   repoName,
+  allowOnlyExternalIssues,
 }) {
   if (!body) {
     return 0;
   }
 
   // loading issues from the PR's repo
-  const internalIssueCount = extractLocalIssueCount(body);
+  const internalIssueCount = allowOnlyExternalIssues
+    ? 0
+    : extractLocalIssueCount(body);
+
+  console.log(allowOnlyExternalIssues);
+  console.log(internalIssueCount);
 
   // loading external issues
   const externalIssueCount = extractExternalIssueCount(body);

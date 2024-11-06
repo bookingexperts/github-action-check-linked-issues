@@ -1,3 +1,4 @@
+---
 name: 'Check linked issues'
 
 description: 'Check if pull requests have their corresponding issues.'
@@ -28,15 +29,17 @@ inputs:
     required: false
     default: "No linked issues found. Please add the corresponding issues in the pull request description. <br/> [Use GitHub automation to close the issue when a PR is merged](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)"
   loose-matching:
-    description: "A boolean value that allow PR to link issues on any branch"
+    description: "A boolean value that allows the PR to link issues on any branch"
+    required: false
+    default: "false"
+  allow-only-external-issues:
+    description: "A boolean value that allows the PR to only link issues on external repositories"
     required: false
     default: "false"
 
 outputs:
   linked_issues_count:
     description: 'The total number of issues linked to your pull request.'
-  issues:
-    description: 'A stringified array containing the numbers of the linked issues, of the form ["some/repo#123", "another/repository#456"]'
 
 runs:
   using: 'node20'

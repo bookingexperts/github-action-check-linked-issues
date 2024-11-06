@@ -34,25 +34,27 @@ module.exports = {
                     : github.context.localRepo
                       ? "Lorem ipsum close #12345 and fix #456"
                       : "Lorem ipsum close https://github.com/orgone/repoone/issues/123, fixes https://github.com/orgtwo/repotwo/issues/456 and resolves ext_org/ext_repo#1337 but also closes #12345 and fixed #67890",
-                closingIssuesReferences: github.context.looseMatching
-                  ? {}
-                  : {
-                      totalCount: 2,
-                      nodes: [
-                        {
-                          number: 12345,
-                          repository: {
-                            nameWithOwner: "test/repo",
+                closingIssuesReferences:
+                  github.context.looseMatching ||
+                  github.context.allowOnlyExternalIssues
+                    ? {}
+                    : {
+                        totalCount: 2,
+                        nodes: [
+                          {
+                            number: 12345,
+                            repository: {
+                              nameWithOwner: "test/repo",
+                            },
                           },
-                        },
-                        {
-                          number: 456,
-                          repository: {
-                            nameWithOwner: "another/repository",
+                          {
+                            number: 456,
+                            repository: {
+                              nameWithOwner: "another/repository",
+                            },
                           },
-                        },
-                      ],
-                    },
+                        ],
+                      },
               },
             },
           });

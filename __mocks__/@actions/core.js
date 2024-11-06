@@ -4,9 +4,18 @@ module.exports = {
   debug: jest.fn(),
   notice: jest.fn(),
   getInput: jest.fn(),
-  getBooleanInput: jest.fn(() => {
+  getBooleanInput: jest.fn((arg) => {
     const github = require("@actions/github");
-    return github.context.looseMatching ?? false;
+    console.log("HI");
+    console.log(arg);
+
+    if (arg == "allow-only-external-issues") {
+      return github.context.allowOnlyExternalIssues ?? false;
+    } else if (arg == "loose-matching") {
+      return github.context.looseMatching ?? false;
+    } else {
+      throw new Error(`Unknown arg ${arg}`);
+    }
   }),
   setFailed: jest.fn(),
   setOutput: jest.fn(),
