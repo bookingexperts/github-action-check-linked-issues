@@ -26,7 +26,7 @@ test.each([
   ["pull_request", 2, ["test/repo#12345", "another/repository#456"]],
   ["pull_request_target", 2, ["test/repo#12345", "another/repository#456"]],
 ])(
-  "should return the number of linked issues and their repos and delete previous comments from linked_issues action while listening %p event",
+  "should return the number of linked issues and delete previous comments from linked_issues action while listening %p event",
   async (eventName, n, issueArray) => {
     // eslint-disable-next-line
     github.context = {
@@ -46,14 +46,13 @@ test.each([
     await run();
 
     expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", n);
-    expect(core.setOutput).toHaveBeenNthCalledWith(2, "issues", issueArray);
     expect(core.debug).toHaveBeenCalledWith(`1 Comment(s) deleted.`);
   },
 );
 
 const REPO_NAME = "repo_name";
 const ORG_NAME = "org_name";
-test("should return the number of linked issues and their repos using loose matching on local repository", async () => {
+test("should return the number of linked issues using loose matching on local repository", async () => {
   // eslint-disable-next-line
   github.context = {
     looseMatching: true,
@@ -74,13 +73,9 @@ test("should return the number of linked issues and their repos using loose matc
   await run();
 
   expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 2);
-  expect(core.setOutput).toHaveBeenNthCalledWith(2, "issues", [
-    `${ORG_NAME}/${REPO_NAME}#12345`,
-    `${ORG_NAME}/${REPO_NAME}#456`,
-  ]);
 });
 
-test("should return the number of linked issues and their repos using loose matching on external repository", async () => {
+test("should return the number of linked issues using loose matching on external repository", async () => {
   // eslint-disable-next-line
   github.context = {
     looseMatching: true,
@@ -101,14 +96,9 @@ test("should return the number of linked issues and their repos using loose matc
   await run();
 
   expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 3);
-  expect(core.setOutput).toHaveBeenNthCalledWith(2, "issues", [
-    "orgone/repoone#123",
-    "orgtwo/repotwo#456",
-    "ext_org/ext_repo#1337",
-  ]);
 });
 
-test("should return the number of linked issues and their repos using loose matching on local and external repository", async () => {
+test("should return the number of linked issues using loose matching on local and external repository", async () => {
   // eslint-disable-next-line
   github.context = {
     looseMatching: true,
@@ -128,13 +118,6 @@ test("should return the number of linked issues and their repos using loose matc
   await run();
 
   expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 5);
-  expect(core.setOutput).toHaveBeenNthCalledWith(2, "issues", [
-    `${ORG_NAME}/${REPO_NAME}#12345`,
-    `${ORG_NAME}/${REPO_NAME}#67890`,
-    "orgone/repoone#123",
-    "orgtwo/repotwo#456",
-    "ext_org/ext_repo#1337",
-  ]);
 });
 
 test.each([["pull_request"], ["pull_request_target"]])(

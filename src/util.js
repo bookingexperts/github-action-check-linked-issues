@@ -89,104 +89,47 @@ export function getLinkedIssues({ octokit, prNumber, repoOwner, repoName }) {
   );
 }
 
-async function getIssues({ owner, repo, issueIds, octokit }) {
-  const issues = [];
-
-  for (const issue_number of issueIds) {
-    try {
-      let issue = await octokit.rest.issues.get({
-        owner,
-        repo,
-        issue_number,
-      });
-
-      if (issue) {
-        core.debug(`Found issue in PR Body ${issue_number}`);
-        issues.push(issue_number);
-      }
-    } catch {
-      core.debug(`#${issue_number} is not a valid issue.`);
-    }
-  }
-
-  return issues;
-}
-
-function extractLocalIssues(body) {
+function extractLocalIssueCount(body) {
   const regex =
     /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/gim;
-  const issues = [];
-  let match;
+  let count = 0;
 
-  while ((match = regex.exec(body.toLowerCase()))) {
-    // eslint-disable-next-line no-unused-vars
-    const [str, action, issueNumber] = match;
-    issues.push(issueNumber);
+  while (regex.test(body.toLowerCase())) {
+    count += 1;
   }
 
-  return issues;
+  return count;
 }
 
-function extractExternalIssues(body) {
+function extractExternalIssueCount(body) {
   const regex =
     /\b(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s(https?:\/\/github\.com\/)*(([^/]+)\/([^/|#]+)(\/issues\/|#)(\d+))/gim;
-  const issues = [];
-  let match;
+  let count = 0;
 
-  while ((match = regex.exec(body.toLowerCase()))) {
-    // eslint-disable-next-line no-unused-vars
-    const [str, action, url, path, owner, repo, separator, issueNumber] = match;
-    issues.push({ owner, repo, issueNumber });
+  while (regex.test(body.toLowerCase())) {
+    count += 1;
   }
 
-  return issues;
+  return count;
 }
 
-export async function getBodyValidIssue({
+export async function getBodyValidIssueCount({
   body,
   octokit,
   repoOwner,
   repoName,
 }) {
-  let issues = [];
   if (!body) {
-    return issues;
+    return 0;
   }
 
   // loading issues from the PR's repo
-  const internalIssues = extractLocalIssues(body);
-  if (internalIssues.length) {
-    const loadedInternalIssues = await getIssues({
-      owner: repoOwner,
-      repo: repoName,
-      issueIds: internalIssues,
-      octokit,
-    });
-    issues = loadedInternalIssues.map(
-      (issueNumber) => `${repoOwner}/${repoName}#${issueNumber}`,
-    );
-  }
+  const internalIssueCount = extractLocalIssueCount(body);
 
   // loading external issues
-  const externalIssues = extractExternalIssues(body);
-  if (externalIssues.length) {
-    const { owner, repo } = externalIssues.at(0);
-    const loadedExternalIssues = await getIssues({
-      owner,
-      repo,
-      issueIds: externalIssues.map((issue) => issue.issueNumber),
-      octokit,
-    });
-    issues = [
-      ...issues,
-      ...loadedExternalIssues.map(
-        (issue, i) =>
-          `${externalIssues.at(i).owner}/${externalIssues.at(i).repo}#${issue}`,
-      ),
-    ];
-  }
+  const externalIssueCount = extractExternalIssueCount(body);
 
-  return issues;
+  return internalIssueCount + externalIssueCount;
 }
 
 function filterLinkedIssuesComments(issues = []) {
