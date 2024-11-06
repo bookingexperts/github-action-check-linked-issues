@@ -33923,7 +33923,7 @@ function extractLocalIssueCount(body) {
     /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/gim;
   let count = 0;
 
-  while (regex.test(body.toLowerCase())) {
+  while (regex.exec(body.toLowerCase())) {
     count += 1;
   }
 
@@ -33935,11 +33935,23 @@ function extractExternalIssueCount(body) {
     /\b(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s(https?:\/\/github\.com\/)*(([^/]+)\/([^/|#]+)(\/issues\/|#)(\d+))/gim;
   let count = 0;
 
-  while (regex.test(body.toLowerCase())) {
+  while (regex.exec(body.toLowerCase())) {
     count += 1;
   }
 
   return count;
+}
+
+async function skipLinkedIssuesCheck(pullRequest) {
+  const body = pullRequest.body;
+
+  if (!body) {
+    return false;
+  }
+
+  const regex = /(\[noissue\]|\[no-issue\])/gi;
+
+  return regex.test(body.toLowerCase());
 }
 
 async function getBodyValidIssueCount({
@@ -34063,38 +34075,47 @@ async function run() {
     `);
 
     const pullRequest = data?.repository?.pullRequest;
-    const linkedIssuesCount = await retrieveLinkedIssuesCount({
-      pullRequest,
-      repoName: name,
-      repoOwner: owner.login,
-      octokit,
-    });
 
-    const linkedIssuesComments = await getPrComments({
-      octokit,
-      repoName: name,
-      prNumber: number,
-      repoOwner: owner.login,
-    });
+    const skipCheck = await skipLinkedIssuesCheck(pullRequest);
 
-    core.setOutput("linked_issues_count", linkedIssuesCount);
+    if (skipCheck) {
+      core.debug("Skip instruction [no-issue] found, skipping check");
+    } else {
+      const linkedIssuesCount = await retrieveLinkedIssuesCount({
+        pullRequest,
+        repoName: name,
+        repoOwner: owner.login,
+        octokit,
+      });
 
-    if (!linkedIssuesCount) {
-      const prId = pullRequest?.id;
-      const shouldComment =
-        !linkedIssuesComments.length && core.getBooleanInput("comment") && prId;
+      const linkedIssuesComments = await getPrComments({
+        octokit,
+        repoName: name,
+        prNumber: number,
+        repoOwner: owner.login,
+      });
 
-      if (shouldComment) {
-        const body = core.getInput("custom-body-comment");
-        await addComment({ octokit, prId, body });
+      core.setOutput("linked_issues_count", linkedIssuesCount);
 
-        core.debug("Comment added");
+      if (!linkedIssuesCount) {
+        const prId = pullRequest?.id;
+        const shouldComment =
+          !linkedIssuesComments.length &&
+          core.getBooleanInput("comment") &&
+          prId;
+
+        if (shouldComment) {
+          const body = core.getInput("custom-body-comment");
+          await addComment({ octokit, prId, body });
+
+          core.debug("Comment added");
+        }
+
+        core.setFailed(ERROR_MESSAGE);
+      } else if (linkedIssuesComments.length) {
+        await deleteLinkedIssueComments(octokit, linkedIssuesComments);
+        core.debug(`${linkedIssuesComments.length} Comment(s) deleted.`);
       }
-
-      core.setFailed(ERROR_MESSAGE);
-    } else if (linkedIssuesComments.length) {
-      await deleteLinkedIssueComments(octokit, linkedIssuesComments);
-      core.debug(`${linkedIssuesComments.length} Comment(s) deleted.`);
     }
   } catch (error) {
     core.setFailed(error.message);

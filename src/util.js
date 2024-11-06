@@ -94,7 +94,7 @@ function extractLocalIssueCount(body) {
     /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #(\d+)/gim;
   let count = 0;
 
-  while (regex.test(body.toLowerCase())) {
+  while (regex.exec(body.toLowerCase())) {
     count += 1;
   }
 
@@ -106,11 +106,23 @@ function extractExternalIssueCount(body) {
     /\b(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s(https?:\/\/github\.com\/)*(([^/]+)\/([^/|#]+)(\/issues\/|#)(\d+))/gim;
   let count = 0;
 
-  while (regex.test(body.toLowerCase())) {
+  while (regex.exec(body.toLowerCase())) {
     count += 1;
   }
 
   return count;
+}
+
+export async function skipLinkedIssuesCheck(pullRequest) {
+  const body = pullRequest.body;
+
+  if (!body) {
+    return false;
+  }
+
+  const regex = /(\[noissue\]|\[no-issue\])/gi;
+
+  return regex.test(body.toLowerCase());
 }
 
 export async function getBodyValidIssueCount({
