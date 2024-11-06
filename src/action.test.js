@@ -47,7 +47,7 @@ test.each([
 
     expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", n);
     expect(core.setOutput).toHaveBeenNthCalledWith(2, "issues", issueArray);
-    expect(core.debug).toHaveBeenCalledWith(`1 Comment(s) deleted.`);
+    expect(core.debug).toHaveBeenCalledWith(`1 comment(s) deleted.`);
   },
 );
 
@@ -138,7 +138,7 @@ test("should return the number of linked issues and their repos using loose matc
 });
 
 test.each([["pull_request"], ["pull_request_target"]])(
-  "should succeed when [no-issue] is part of the PR body",
+  "should succeed when [no-issue] is part of the PR body and also delete any comments",
   async (eventName) => {
     // eslint-disable-next-line
     github.context = {
@@ -160,9 +160,12 @@ test.each([["pull_request"], ["pull_request_target"]])(
     await run();
     expect(core.setFailed).not.toHaveBeenCalled();
     expect(core.setOutput).not.toHaveBeenCalled();
+
     expect(core.debug).toHaveBeenCalledWith(
       "Skip instruction [no-issue] found, skipping check",
     );
+
+    expect(core.debug).toHaveBeenCalledWith(`1 comment(s) deleted.`);
   },
 );
 
