@@ -5,6 +5,8 @@ import { minimatch } from "minimatch";
 const GITHUB_KEYWORDS =
   "close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved";
 
+const GITHUB_URL = "https?:\\/\\/github\\.com\\/";
+
 function parseCSV(value) {
   if (value.trim() === "") return [];
   return value.split(",").map((p) => p.trim());
@@ -113,12 +115,12 @@ function extractExternalIssueCount(body) {
 
   if (requiredExternalRepo?.length) {
     regex = new RegExp(
-      `\\b(${GITHUB_KEYWORDS})\\s${requiredExternalRepo}#\\d+`,
+      `\\b(${GITHUB_KEYWORDS})\\s(${GITHUB_URL}${requiredExternalRepo}\\/issues\\/|${requiredExternalRepo}(\\/issues\\/|#))\\d+`,
       "gim",
     );
   } else {
     regex = new RegExp(
-      `\\b(${GITHUB_KEYWORDS})\\s(https?:\\/\\/github\\.com\\/)*(([^/]+)\\/([^/|#]+)(\\/issues\\/|#)(\\d+))`,
+      `\\b(${GITHUB_KEYWORDS})\\s(${GITHUB_URL})*(([^/]+)\\/([^/|#]+)(\\/issues\\/|#)(\\d+))`,
       "gim",
     );
   }

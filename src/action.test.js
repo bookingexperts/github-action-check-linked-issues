@@ -118,7 +118,7 @@ test("should return the number of linked issues using loose matching on local an
 
   await run();
 
-  expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 5);
+  expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 7);
 });
 
 test("should return the number of linked issues on only external repository when only external issues are allowed", async () => {
@@ -140,7 +140,7 @@ test("should return the number of linked issues on only external repository when
 
   await run();
 
-  expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 3);
+  expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 5);
 });
 
 test("filters by required-external-repo", async () => {
@@ -193,6 +193,32 @@ test("filters by both allow-only-external-issues and required-external-repo", as
   await run();
 
   expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 1);
+});
+
+test("matches full issue URLs against required-external-repo", async () => {
+  core.getInput.mockImplementation((a) =>
+    a === "required-external-repo" ? "orgtwo/repotwo" : "",
+  );
+
+  // eslint-disable-next-line
+  github.context = {
+    allowOnlyExternalIssues: true,
+    eventName: "pull_request",
+    payload: {
+      action: "opened",
+      number: 123,
+      repository: {
+        name: REPO_NAME,
+        owner: {
+          login: ORG_NAME,
+        },
+      },
+    },
+  };
+
+  await run();
+
+  expect(core.setOutput).toHaveBeenNthCalledWith(1, "linked_issues_count", 3);
 });
 
 test.each([["pull_request"], ["pull_request_target"]])(
