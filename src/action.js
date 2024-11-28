@@ -9,6 +9,7 @@ import {
   deleteLinkedIssueComments,
   getPrComments,
   getBodyValidIssue,
+  skipLinkedIssuesCheck,
 } from "./util.js";
 
 const format = (obj) => JSON.stringify(obj, undefined, 2);
@@ -56,39 +57,48 @@ async function run() {
     `);
 
     const pullRequest = data?.repository?.pullRequest;
-    const { linkedIssuesCount, issues } = await retrieveIssuesAndCount({
-      pullRequest,
-      repoName: name,
-      repoOwner: owner.login,
-      octokit,
-    });
 
-    const linkedIssuesComments = await getPrComments({
-      octokit,
-      repoName: name,
-      prNumber: number,
-      repoOwner: owner.login,
-    });
+    const skipCheck = await skipLinkedIssuesCheck(pullRequest);
 
-    core.setOutput("linked_issues_count", linkedIssuesCount);
-    core.setOutput("issues", issues);
+    if (skipCheck) {
+      core.debug("Skip instruction [no-issue] found, skipping check");
+    } else {
+      const { linkedIssuesCount, issues } = await retrieveIssuesAndCount({
+        pullRequest,
+        repoName: name,
+        repoOwner: owner.login,
+        octokit,
+      });
 
-    if (!linkedIssuesCount) {
-      const prId = pullRequest?.id;
-      const shouldComment =
-        !linkedIssuesComments.length && core.getBooleanInput("comment") && prId;
+      const linkedIssuesComments = await getPrComments({
+        octokit,
+        repoName: name,
+        prNumber: number,
+        repoOwner: owner.login,
+      });
 
-      if (shouldComment) {
-        const body = core.getInput("custom-body-comment");
-        await addComment({ octokit, prId, body });
+      core.setOutput("linked_issues_count", linkedIssuesCount);
+      core.setOutput("issues", issues);
 
-        core.debug("Comment added");
+      if (!linkedIssuesCount) {
+        const prId = pullRequest?.id;
+        const shouldComment =
+          !linkedIssuesComments.length &&
+          core.getBooleanInput("comment") &&
+          prId;
+
+        if (shouldComment) {
+          const body = core.getInput("custom-body-comment");
+          await addComment({ octokit, prId, body });
+
+          core.debug("Comment added");
+        }
+
+        core.setFailed(ERROR_MESSAGE);
+      } else if (linkedIssuesComments.length) {
+        await deleteLinkedIssueComments(octokit, linkedIssuesComments);
+        core.debug(`${linkedIssuesComments.length} Comment(s) deleted.`);
       }
-
-      core.setFailed(ERROR_MESSAGE);
-    } else if (linkedIssuesComments.length) {
-      await deleteLinkedIssueComments(octokit, linkedIssuesComments);
-      core.debug(`${linkedIssuesComments.length} Comment(s) deleted.`);
     }
   } catch (error) {
     core.setFailed(error.message);

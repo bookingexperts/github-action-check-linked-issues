@@ -138,6 +138,35 @@ test("should return the number of linked issues and their repos using loose matc
 });
 
 test.each([["pull_request"], ["pull_request_target"]])(
+  "should succeed when [no-issue] is part of the PR body",
+  async (eventName) => {
+    // eslint-disable-next-line
+    github.context = {
+      eventName,
+      noIssueInBody: true,
+      payload: {
+        action: "opened",
+        number: 123,
+        repository: {
+          name: "repo_name",
+          owner: {
+            login: "org_name",
+          },
+        },
+      },
+    };
+    // eslint-disable-next-line
+    core.getBooleanInput.mockReturnValue("true");
+    await run();
+    expect(core.setFailed).not.toHaveBeenCalled();
+    expect(core.setOutput).not.toHaveBeenCalled();
+    expect(core.debug).toHaveBeenCalledWith(
+      "Skip instruction [no-issue] found, skipping check",
+    );
+  },
+);
+
+test.each([["pull_request"], ["pull_request_target"]])(
   "should fail when no linked issues are found and add comment into PR while listening %p event",
   async (eventName) => {
     const addCommentMutation =
