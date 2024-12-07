@@ -142,6 +142,15 @@ function extractExternalIssues(body) {
   return issues;
 }
 
+export async function skipLinkedIssuesCheck(pullRequest) {
+  const body = pullRequest.body;
+  if (!body) {
+    return false;
+  }
+  const regex = /(\[noissue\]|\[no-issue\])/gi;
+  return regex.test(body.toLowerCase());
+}
+
 export async function getBodyValidIssue({
   body,
   octokit,
